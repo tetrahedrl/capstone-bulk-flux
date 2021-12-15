@@ -35,3 +35,15 @@ Longwave_(W/m2)
 
 Solar_(W/m2)
 
+--------------------
+wg_guess
+0.5
+c_en_guess
+0.001
+c_hn_guess
+0.001
+c_dn_guess
+
+c_Tn_guess
+
+c_qn_guess

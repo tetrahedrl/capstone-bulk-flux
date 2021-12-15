@@ -7,9 +7,9 @@ extern int time;
 extern double alpha, beta, profileGamma, aCorr, grav, invZ, albedo, emissiv, karman; 
 extern double measureZ, windU, surfaceT, airT, specificQ, precip, longwave, solar;
 extern double surfaceTPrevious, surfaceQPrevious;
+extern double wg, coefEN, coefHN, coefDN, coefTN, coefQN;
 
-double viscAir;
-double enthalpyL;
+double viscAir, enthalpyL;
 
 int main()
 {
@@ -22,5 +22,7 @@ int main()
 
     enthalpyL = 100000 * (25 - 0.02274 * airT);
     printf("\nLatent Heat of Vaporization\n%lf", enthalpyL);
+
+    //printf("\n%lf\n%lf\n%lf\n%lf\n%lf\n%lf", wg, coefEN, coefHN, coefDN, coefTN, coefQN);
 
 }
