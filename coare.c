@@ -8,11 +8,19 @@ extern double alpha, beta, profileGamma, aCorr, grav, invZ, albedo, emissiv, kar
 extern double measureZ, windU, surfaceT, airT, specificQ, precip, longwave, solar;
 extern double surfaceTPrevious, surfaceQPrevious;
 
+double viscAir;
+double enthalpyL;
+
 int main()
 {
 
     takeInputs();
-    printf("%lf", profileGamma);
-    return 0;
+    printf("Air T\n%lf", airT);
+
+    viscAir = 0.00001326 * (1 + 0.006542 * airT + 0.000008301 * pow(airT, 2) - 0.00000000484 * pow(airT, 3));
+    printf("\nAir Viscosity\n%lf", viscAir);
+
+    enthalpyL = 100000 * (25 - 0.02274 * airT);
+    printf("\nLatent Heat of Vaporization\n%lf", enthalpyL);
 
 }
