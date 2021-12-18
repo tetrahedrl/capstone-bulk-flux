@@ -9,7 +9,13 @@ extern double measureZ, windU, surfaceT, airT, specificQ, precip, longwave, sola
 extern double surfaceTPrevious, surfaceQPrevious;
 extern double wg, coefEN, coefHN, coefDN, coefTN, coefQN;
 
-double viscAir, enthalpyL;
+double viscAir, enthalpyL, windS, surfaceQ, potT;
+double starT, starQ, starU, starUt;
+
+double scalingParam(double coefTransfer, double interfaceValue, double tempDependant)
+{
+    return -1 * sqrt(coefTransfer) * (interfaceValue - tempDependant);
+}
 
 int main()
 {
@@ -23,6 +29,13 @@ int main()
     enthalpyL = 100000 * (25 - 0.02274 * airT);
     printf("\nLatent Heat of Vaporization\n%lf", enthalpyL);
 
+    windS = sqrt(pow(windU, 2) + pow(wg, 2));
     //printf("\n%lf\n%lf\n%lf\n%lf\n%lf\n%lf", wg, coefEN, coefHN, coefDN, coefTN, coefQN);
+
+    potT = airT + 0.0098 * measureZ;
+    
+    starT = scalingParam(coefTN, surfaceT, potT);
+    
+
 
 }
