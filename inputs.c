@@ -5,9 +5,9 @@
 
 int time;
 double alpha, beta, profileGamma, aCorr, grav, invZ, albedo, emissiv, karman; 
-double measureZ, windU, surfaceT, airT, specificQ, precip, longwave, solar;
+double measureZ, windU, surfaceT, airT, specificQ, precip, longwave, solar, pressure;
 double surfaceTPrevious, surfaceQPrevious;
-double wg, coefEN, coefHN, coefDN, coefTN, coefQN;
+double wg, coefEN, coefHN, roughZ;
 
 
 void takeInputs()
@@ -55,6 +55,8 @@ void takeInputs()
     fscanf(inputFile, "%s", dummy);
     fscanf(inputFile, "%lf", &solar);
     fscanf(inputFile, "%s", dummy);
+    fscanf(inputFile, "%lf", &pressure);
+    fscanf(inputFile, "%s", dummy);
     fscanf(inputFile, "%s", dummy);
     fscanf(inputFile, "%lf", &wg);
     fscanf(inputFile, "%s", dummy);
@@ -62,11 +64,7 @@ void takeInputs()
     fscanf(inputFile, "%s", dummy);
     fscanf(inputFile, "%lf", &coefHN);
     fscanf(inputFile, "%s", dummy);
-    fscanf(inputFile, "%lf", &coefDN);
-    fscanf(inputFile, "%s", dummy);
-    fscanf(inputFile, "%lf", &coefTN);
-    fscanf(inputFile, "%s", dummy);
-    fscanf(inputFile, "%lf", &coefQN);
+    fscanf(inputFile, "%lf", &roughZ);
     
     
     /*

@@ -5,16 +5,67 @@
 
 extern int time;
 extern double alpha, beta, profileGamma, aCorr, grav, invZ, albedo, emissiv, karman; 
-extern double measureZ, windU, surfaceT, airT, specificQ, precip, longwave, solar;
+extern double measureZ, windU, surfaceT, airT, specificQ, precip, longwave, solar, pressure;
 extern double surfaceTPrevious, surfaceQPrevious;
-extern double wg, coefEN, coefHN, coefDN, coefTN, coefQN;
+extern double wg, coefEN, coefHN, roughZ;
 
-double viscAir, enthalpyL, windS, surfaceQ, potT;
+double sqrtCoefDN, sqrtCoefTN, sqrtCoefQN;
+double viscAir, enthalpyL, windS, surfaceQ, potT, potDiffT, interfSpecificQ, zeta, profileY;
 double starT, starQ, starU, starUt;
+double reynoldsR, reynoldsT, reynoldsQ;
+
+double humidity(double t, double p)
+{
+    double qs = 0.98 * ((1.0007 + 0.00000356 * p) * 6.1121 * exp(17.502 * t / (240.97 + t)));
+    return 0.62197 * (qs / (p - 0.378 * qs));
+}
 
 double scalingParam(double coefTransfer, double interfaceValue, double tempDependant)
 {
     return -1 * sqrt(coefTransfer) * (interfaceValue - tempDependant);
+}
+
+void calcZeta()
+{
+    zeta = measureZ * ((karman * grav / airT) * (starT + 0.61 * airT * starQ) / pow(starU, 2));
+}
+
+void calcRoughZ()
+{
+    roughZ = alpha * (pow(starU, 2) / grav) + 0.11 * (viscAir / starU);
+}
+
+void reynoldsConvert()
+{
+    double range[7] = {0, 0.11, 0.85, 3.0, 10.0, 30.0, 100.0};
+    double a[2][6] = {
+        {0.177, 1.376, 1.026, 1.625, 4.661, 34.904}, 
+        {0.292, 1.808, 1.393, 1.956, 4.994, 30.790}
+    };
+    double b[2][6] = {
+        {0, 0.929, -0.599, -1.018, -1.475, -2.067},
+        {0, 0.826, -0.528, -0.870, -1.297, -1.845}
+    };
+    for(int i = 0; i < 6; i++)
+    {
+        if (reynoldsR > range[i] && reynoldsR <= range[i + 1])
+        {
+            reynoldsT = a[0][i] * pow(reynoldsR, b[0][i]);
+            reynoldsQ = a[1][i] * pow(reynoldsR, b[1][i]);
+        }
+    }
+}
+
+double sqrtNeutrals(double reynolds, double correction)
+{
+    double roughZEQ = (viscAir / starU) * reynolds;
+    return correction * karman / log(measureZ / roughZEQ);
+}
+
+double psiC(double z)
+{
+    double y = cbrt(1 - profileGamma * z);
+    return 1.5 * log((y * y + y + 1) / 3) - sqrt(3) * atan((2 * y + 1) / sqrt(3)) + M_PI / sqrt(3);
 }
 
 int main()
@@ -33,9 +84,39 @@ int main()
     //printf("\n%lf\n%lf\n%lf\n%lf\n%lf\n%lf", wg, coefEN, coefHN, coefDN, coefTN, coefQN);
 
     potT = airT + 0.0098 * measureZ;
-    
-    starT = scalingParam(coefTN, surfaceT, potT);
-    
+    potDiffT = airT - (surfaceT + 0.0098 * measureZ);
+    interfSpecificQ = humidity(airT, pressure);
 
+    starU = 0.04 * windS;
+    starT = 0.04 * potDiffT;
+    starQ = specificQ - interfSpecificQ;
 
+    //for(int i = 0; i < 20; i++)
+    //{
+        calcZeta();
+        calcRoughZ();
+        reynoldsR = starU * roughZ / viscAir;
+        reynoldsConvert();
+        printf("\noriginal DN\n%lf", karman / log(measureZ / roughZ));
+        sqrtCoefDN = sqrtNeutrals(reynoldsR, 1);
+        sqrtCoefTN = sqrtNeutrals(reynoldsT, alpha);
+        sqrtCoefQN = sqrtNeutrals(reynoldsQ, alpha);
+        printf("\nDN\n%lf", sqrtCoefDN);
+        printf("\nTN\n%lf", sqrtCoefTN);
+        printf("\nQN\n%lf", sqrtCoefQN);
+        printf("\npsiC(zeta)\n%lf", psiC(zeta));
+    //}
+
+    //calcZeta();
+
+    //printf("\nZeta\n%lf", zeta);
+
+    //starT = scalingParam(coefTN, surfaceT, potT);
+    
+ /*   reynoldsR = 30;
+    reynoldsConvert();
+    printf("\nRR\n%lf", reynoldsR);
+    printf("\nRT\n%lf", reynoldsT);
+    printf("\nRQ\n%lf", reynoldsQ);
+*/
 }
