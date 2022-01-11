@@ -9,10 +9,12 @@ extern double measureZ, windU, surfaceT, airT, specificQ, precip, longwave, sola
 extern double surfaceTPrevious, surfaceQPrevious;
 extern double wg, coefEN, coefHN, roughZ;
 
-double sqrtCoefDN, sqrtCoefTN, sqrtCoefQN;
+double sqrtCoefDN, sqrtCoefTN, sqrtCoefQN, sqrtCoefD, sqrtCoefT, sqrtCoefQ;
 double viscAir, enthalpyL, windS, surfaceQ, potT, potDiffT, interfSpecificQ, zeta, profileY;
 double starT, starQ, starU, starUt;
 double reynoldsR, reynoldsT, reynoldsQ;
+double psiU, psiH;
+double fluxS, fluxL, fluxT;
 
 double humidity(double t, double p)
 {
@@ -62,10 +64,19 @@ double sqrtNeutrals(double reynolds, double correction)
     return correction * karman / log(measureZ / roughZEQ);
 }
 
-double psiC(double z)
+double sqrtComponents(double sqrtNeutral, double psi, double correction)
+{
+    return sqrtNeutral / (1 - (sqrtNeutral / (karman * correction)) * psi);
+}
+
+void getPsi(double z)
 {
     double y = cbrt(1 - profileGamma * z);
-    return 1.5 * log((y * y + y + 1) / 3) - sqrt(3) * atan((2 * y + 1) / sqrt(3)) + M_PI / sqrt(3);
+    double psiC = 1.5 * log((y * y + y + 1) / 3) - sqrt(3) * atan((2 * y + 1) / sqrt(3)) + M_PI / sqrt(3);
+    double psiKU = 2 * log((1 + sqrt(y)) / 2) + log((y + 1)/2);
+    double psiKH = 2 * log((1 + y) / 2);
+    psiU = (1 / (1 + pow(z, 2))) * psiKU + (pow(z, 2) / (1 + pow(z, 2))) * psiC;
+    psiH = (1 / (1 + pow(z, 2))) * psiKH + (pow(z, 2) / (1 + pow(z, 2))) * psiC;
 }
 
 int main()
@@ -73,6 +84,8 @@ int main()
 
     takeInputs();
     printf("Air T\n%lf", airT);
+
+    specificQ = specificQ / 1000;
 
     viscAir = 0.00001326 * (1 + 0.006542 * airT + 0.000008301 * pow(airT, 2) - 0.00000000484 * pow(airT, 3));
     printf("\nAir Viscosity\n%lf", viscAir);
@@ -84,28 +97,50 @@ int main()
     //printf("\n%lf\n%lf\n%lf\n%lf\n%lf\n%lf", wg, coefEN, coefHN, coefDN, coefTN, coefQN);
 
     potT = airT + 0.0098 * measureZ;
-    potDiffT = airT - (surfaceT + 0.0098 * measureZ);
+    potDiffT = fabs(airT - (surfaceT + 0.0098 * measureZ));
     interfSpecificQ = humidity(airT, pressure);
+
+    printf("\nspecificQ\n%lf\ninterfSpecificQ\n%lf", specificQ, interfSpecificQ);
+    printf("\nairT\n%lf\npotT\n%lf\npotDiffT\n%lf", airT, potT, potDiffT);
 
     starU = 0.04 * windS;
     starT = 0.04 * potDiffT;
-    starQ = specificQ - interfSpecificQ;
+    starQ = fabs(specificQ - interfSpecificQ);
 
-    //for(int i = 0; i < 20; i++)
-    //{
+    for(int i = 0; i < 20; i++)
+    {
+        printf("\n\nairT\n%lf\nstarT\n%lf\nstarQ\n%lf\nstarU\n%lf\n", airT, starT, starQ, starU);
         calcZeta();
+        printf("\n\nzeta\n%lf\n", zeta);
         calcRoughZ();
+        printf("\n\nroughZ\n%lf\n", roughZ);
         reynoldsR = starU * roughZ / viscAir;
         reynoldsConvert();
-        printf("\noriginal DN\n%lf", karman / log(measureZ / roughZ));
+        //printf("\noriginal DN\n%lf", karman / log(measureZ / roughZ));
+        getPsi(zeta);
         sqrtCoefDN = sqrtNeutrals(reynoldsR, 1);
         sqrtCoefTN = sqrtNeutrals(reynoldsT, alpha);
         sqrtCoefQN = sqrtNeutrals(reynoldsQ, alpha);
-        printf("\nDN\n%lf", sqrtCoefDN);
-        printf("\nTN\n%lf", sqrtCoefTN);
-        printf("\nQN\n%lf", sqrtCoefQN);
-        printf("\npsiC(zeta)\n%lf", psiC(zeta));
-    //}
+        //printf("\nDN\n%lf", sqrtCoefDN);
+        //printf("\nTN\n%lf", sqrtCoefTN);
+        //printf("\nQN\n%lf", sqrtCoefQN);
+        sqrtCoefD = sqrtComponents(sqrtCoefDN, psiU, 1);
+        sqrtCoefT = sqrtComponents(sqrtCoefTN, psiH, alpha);
+        sqrtCoefQ = sqrtComponents(sqrtCoefQN, psiH, alpha);
+        starUt = sqrt(pow(sqrtCoefD, 2) * pow(windS, 2));
+        starT = -1 * sqrtCoefT * (surfaceT - potT);
+        starQ = -1 * sqrtCoefQ * (interfSpecificQ - specificQ);
+        fluxS = -1 * pressure * 1004.67 * starU * starT;
+        fluxL = -1 * pressure * enthalpyL * starU * starQ;
+        fluxT = -1 * pressure * pow(starU, 2);
+
+        printf("\n\nLoop counter %d", i);
+        printf("\n\nSensible Heat Flux %lf", fluxS);
+        printf("\n\nLatent Heat Flux %lf", fluxL);
+
+
+        //printf("\npsiC(zeta)\n%lf", psiC(zeta));
+    }
 
     //calcZeta();
 
