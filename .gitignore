@@ -1,0 +1,7 @@
+# Compiled #
+*.exe
+*.o
+
+# Directories #
+/other
+/data
