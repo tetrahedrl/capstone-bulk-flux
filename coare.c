@@ -71,7 +71,7 @@ double sqrtComponents(double sqrtNeutral, double psi, double correction)
 
 void getPsi(double z)
 {
-    double y = cbrt(1 - profileGamma * z);
+    double y = cbrt(1. - profileGamma * z);
     double psiC = 1.5 * log((y * y + y + 1) / 3) - sqrt(3) * atan((2 * y + 1) / sqrt(3)) + M_PI / sqrt(3);
     double psiKU = 2 * log((1 + sqrt(y)) / 2) + log((y + 1)/2);
     double psiKH = 2 * log((1 + y) / 2);
@@ -85,7 +85,7 @@ int main()
     takeInputs();
     printf("Air T\n%lf", airT);
 
-    specificQ = specificQ / 1000;
+    specificQ = specificQ / 1000; // 
 
     viscAir = 0.00001326 * (1 + 0.006542 * airT + 0.000008301 * pow(airT, 2) - 0.00000000484 * pow(airT, 3));
     printf("\nAir Viscosity\n%lf", viscAir);
