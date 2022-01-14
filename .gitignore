@@ -1,6 +1,7 @@
 # Compiled #
 *.exe
 *.o
+coare
 
 # Directories #
 /other
