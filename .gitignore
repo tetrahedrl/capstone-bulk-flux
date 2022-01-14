@@ -2,6 +2,8 @@
 *.exe
 *.o
 coare
+inputs
+test
 
 # Directories #
 /other
