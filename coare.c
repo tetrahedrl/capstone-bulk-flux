@@ -29,12 +29,12 @@ double scalingParam(double coefTransfer, double interfaceValue, double tempDepen
 
 void calcZeta()
 {
-    zeta = measureZ * ((karman * grav / airT) * (starT + 0.61 * airT * starQ) / pow(starU, 2));
+    zeta = measureZ * ((karman * grav / airT) * (starT + 0.61 * airT * starQ) / (starU * starU));
 }
 
 void calcRoughZ()
 {
-    roughZ = alpha * (pow(starU, 2) / grav) + 0.11 * (viscAir / starU);
+    roughZ = alpha * ((starU * starU) / grav) + 0.11 * (viscAir / starU);
 }
 
 void reynoldsConvert()
@@ -75,8 +75,8 @@ void getPsi(double z)
     double psiC = 1.5 * log((y * y + y + 1) / 3) - sqrt(3) * atan((2 * y + 1) / sqrt(3)) + M_PI / sqrt(3);
     double psiKU = 2 * log((1 + sqrt(y)) / 2) + log((y + 1)/2);
     double psiKH = 2 * log((1 + y) / 2);
-    psiU = (1 / (1 + pow(z, 2))) * psiKU + (pow(z, 2) / (1 + pow(z, 2))) * psiC;
-    psiH = (1 / (1 + pow(z, 2))) * psiKH + (pow(z, 2) / (1 + pow(z, 2))) * psiC;
+    psiU = (1 / (1 + (z * z))) * psiKU + ((z * z) / (1 + (z * z))) * psiC;
+    psiH = (1 / (1 + (z * z))) * psiKH + ((z * z) / (1 + (z * z))) * psiC;
 }
 
 int main()
@@ -87,13 +87,13 @@ int main()
 
     specificQ = specificQ / 1000; // 
 
-    viscAir = 0.00001326 * (1 + 0.006542 * airT + 0.000008301 * pow(airT, 2) - 0.00000000484 * pow(airT, 3));
+    viscAir = 0.00001326 * (1 + 0.006542 * airT + 0.000008301 * (airT *airT) - 0.00000000484 * pow(airT, 3));
     printf("\nAir Viscosity\n%lf", viscAir);
 
     enthalpyL = 100000 * (25 - 0.02274 * airT);
     printf("\nLatent Heat of Vaporization\n%lf", enthalpyL);
 
-    windS = sqrt(pow(windU, 2) + pow(wg, 2));
+    windS = sqrt((windU * windU) + (wg * wg));
     //printf("\n%lf\n%lf\n%lf\n%lf\n%lf\n%lf", wg, coefEN, coefHN, coefDN, coefTN, coefQN);
 
     potT = airT + 0.0098 * measureZ;
@@ -127,12 +127,12 @@ int main()
         sqrtCoefD = sqrtComponents(sqrtCoefDN, psiU, 1);
         sqrtCoefT = sqrtComponents(sqrtCoefTN, psiH, alpha);
         sqrtCoefQ = sqrtComponents(sqrtCoefQN, psiH, alpha);
-        starUt = sqrt(pow(sqrtCoefD, 2) * pow(windS, 2));
+        starUt = sqrt(sqrtCoefD * sqrtCoefD * windS * windS);
         starT = -1 * sqrtCoefT * (surfaceT - potT);
         starQ = -1 * sqrtCoefQ * (interfSpecificQ - specificQ);
         fluxS = -1 * pressure * 1004.67 * starU * starT;
         fluxL = -1 * pressure * enthalpyL * starU * starQ;
-        fluxT = -1 * pressure * pow(starU, 2);
+        fluxT = -1 * pressure * starU * starU;
 
         printf("\n\nLoop counter %d", i);
         printf("\n\nSensible Heat Flux %lf", fluxS);
