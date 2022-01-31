@@ -15,7 +15,7 @@ double starT, starQ, starU, starUt;
 double reynoldsR, reynoldsT, reynoldsQ;
 double psiU, psiH;
 double fluxS, fluxL, fluxT;
-double prevS = 1;
+double prevL = 1;
 
 double stability;
 double gustiness;
@@ -49,7 +49,7 @@ void calcZeta()
 
 void calcRoughZ()
 {
-    roughZ = alpha * ((starU * starU) / grav); //+ 0.11 * (viscAir / starU);
+    roughZ = alpha * ((starU * starU) / grav) + 0.11 * (viscAir / starU);
 }
 
 void reynoldsConvert()
@@ -130,11 +130,11 @@ int main()
     starT = -1 * 0.04 * potDiffT;
     starQ = -1 * fabs(specificQ - interfSpecificQ);
 
-    for(int i = 0; i < 20; i++)
-    //while(abs(prevS - fluxS) > .001)
+    //for(int i = 0; i < 20; i++)
+    while(abs(prevL - fluxL) > .001)
     {
-        prevS = fluxS;
-        //i++;
+        prevL = fluxL;
+        i++;
         //printf("\n\nairT\n%lf\nstarT\n%lf\nstarQ\n%lf\nstarU\n%lf\n", airT, starT, starQ, starU);
         calcZeta();
         //printf("\n\nzeta\n%lf\n", zeta);
