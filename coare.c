@@ -49,7 +49,7 @@ void calcZeta()
 
 void calcRoughZ()
 {
-    roughZ = alpha * ((starU * starU) / grav) + 0.11 * (viscAir / starU);
+    roughZ = alpha * ((starU * starU) / grav); //+ 0.11 * (viscAir / starU);
 }
 
 void reynoldsConvert()
