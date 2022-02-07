@@ -116,7 +116,7 @@ int main()
     starQ = -1 * fabs(specificQ - interfSpecificQ);
 
     //for(int i = 0; i < 20; i++)
-    while(abs(prevS - fluxS) > .001)
+    while(abs(prevS - fluxS) > .001 && i < 20)
     {
         prevS = fluxS;
         i++;
