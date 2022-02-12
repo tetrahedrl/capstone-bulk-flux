@@ -1,16 +1,15 @@
-#include "inputs.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include "def.h"
 
-extern int time;
 extern double alpha, beta, profileGamma, aCorr, grav, invZ, albedo, emissiv, karman; 
-extern double measureZ, windU, surfaceT, airT, specificQ, precip, longwave, solar, pressure;
+extern double measureZ, windU, surfaceT, airT, specificQ, precip, longwave, solar, density;
 extern double surfaceTPrevious, surfaceQPrevious;
 extern double wg, coefEN, coefHN, roughZ;
 
 double sqrtCoefDN, sqrtCoefTN, sqrtCoefQN, sqrtCoefD, sqrtCoefT, sqrtCoefQ;
-double viscAir, enthalpyL, windS, surfaceQ, potT, potDiffT, interfSpecificQ, zeta, profileY;
+double viscAir, enthalpyL, windS, surfaceQ, potT, potDiffT, satSpecificQ, zeta, profileY;
 double starT, starQ, starU, starUt;
 double reynoldsR, reynoldsT, reynoldsQ;
 double psiU, psiH;
@@ -23,22 +22,31 @@ double tau;
 
 int i;
 
-double humidity(double t, double p)
-{
-    t += 273.15;
-    
-    /*p = 1000;
-    double qs = 0.98 * ((1.0007 + 0.00000356 * p) * 6.1121 * exp(17.502 * t / (240.97 + t)));
-    double mixing =  0.62197 * (qs / (p - 0.378 * qs));*/
+// return enthalpy of vaporization for temp t
 
-    double svp = 611.12 * exp((enthalpyL / 461.2) * ((1 / 273.16) - (1 / t)));
-    double mixing = svp * 0.622 / (100000 - svp);
-    return mixing;
+double enthalpyV(double t)
+{
+    return 100000 * (25 - 0.02274 * t);
 }
 
-double scalingParam(double coefTransfer, double interfaceValue, double tempDependant)
+// return saturation mixing ratio for temp t
+double satMix(double t) 
 {
-    return -1 * sqrt(coefTransfer) * (interfaceValue - tempDependant);
+    double lv = enthalpyV(t);
+    t += 273.15; // c to k
+    double svp = 611.12 * exp((lv / 461.2) * ((1 / 273.15) - (1 / t))); // saturation vapor pressure
+    return svp * 0.622 / (100000 - svp); // saturation mixing ratio
+}
+
+// return kinematic viscosity of air for temp t
+double kinVisc(double t) 
+{
+    return 0.00001326 * (1 + 0.006542 * t + 0.000008301 * (t * t) - 0.00000000484 * (t * t * t));
+}
+
+double scalingParam(double coefTransfer, double total, double subtract)
+{
+    return -1 * sqrt(coefTransfer) * (total - subtract);
 }
 
 void calcZeta()
@@ -91,6 +99,8 @@ void getPsi(double z)
     double psiKU = 2 * log((1 + sqrt(y)) / 2) + log((y + 1)/2);
     double psiKH = 2 * log((1 + y) / 2);
 
+    /*
+
     double au = 16.;
     double yLKB = sqrt(1 - au * z);
     double xLKB = sqrt(yLKB);
@@ -98,93 +108,61 @@ void getPsi(double z)
     double psiKHLKB = 2 * log((1 + yLKB)/2);
     double psiKULKB = 2 * log((1 + xLKB)/2) + log((xLKB * xLKB + 1) / 2) - 2 * atan(xLKB) + M_PI / 2;
 
+    */
+
     psiU = (1 / (1 + (z * z))) * psiKU + ((z * z) / (1 + (z * z))) * psiC;
     psiH = (1 / (1 + (z * z))) * psiKH + ((z * z) / (1 + (z * z))) * psiC;
 }
 
-int main()
+
+struct coare run() // here's where we put the current main() function from coare.c
 {
-
-    takeInputs();
-    //printf("Air T\n%lf", airT);
-
-    specificQ = specificQ / 1000; // 
-
-    viscAir = 0.00001326 * (1 + 0.006542 * airT + 0.000008301 * (airT *airT) - 0.00000000484 * pow(airT, 3));
-    //printf("\nAir Viscosity\n%lf", viscAir);
-
-    enthalpyL = 100000 * (25 - 0.02274 * airT);
-    //printf("\nLatent Heat of Vaporization\n%lf", enthalpyL);
-
+    viscAir = kinVisc(airT);
+    enthalpyL = enthalpyV(airT);
     windS = sqrt((windU * windU) + (wg * wg));
-    //printf("\n%lf\n%lf\n%lf\n%lf\n%lf\n%lf", wg, coefEN, coefHN, coefDN, coefTN, coefQN);
 
     potT = airT + 0.0098 * measureZ;
     potDiffT = fabs(airT - (surfaceT + 0.0098 * measureZ));
-    interfSpecificQ = humidity(airT, pressure);
-
-    //printf("\nspecificQ\n%lf\ninterfSpecificQ\n%lf", specificQ, interfSpecificQ);
-    //printf("\nairT\n%lf\npotT\n%lf\npotDiffT\n%lf", airT, potT, potDiffT);
+    satSpecificQ = satMix(airT);
 
     starU = 0.04 * windS;
     starT = -1 * 0.04 * potDiffT;
-    starQ = -1 * fabs(specificQ - interfSpecificQ);
+    starQ = -1 * fabs(specificQ - satSpecificQ);
 
-    //for(int i = 0; i < 20; i++)
+    i = 0;
+    prevL = 1;
+
     while(abs(prevL - fluxL) > .001 && i < 20)
     {
         prevL = fluxL;
         i++;
-        //printf("\n\nairT\n%lf\nstarT\n%lf\nstarQ\n%lf\nstarU\n%lf\n", airT, starT, starQ, starU);
+
         calcZeta();
-        //printf("\n\nzeta\n%lf\n", zeta);
         calcRoughZ();
-        //printf("\n\nroughZ\n%lf\n", roughZ);
         reynoldsR = starU * roughZ / viscAir;
         reynoldsConvert();
-        //printf("\noriginal DN\n%lf", karman / log(measureZ / roughZ));
         getPsi(zeta);
         sqrtCoefDN = sqrtNeutrals(reynoldsR, 1.);
         sqrtCoefTN = sqrtNeutrals(reynoldsT, aCorr);
         sqrtCoefQN = sqrtNeutrals(reynoldsQ, aCorr);
-        //printf("\nDN\n%lf", sqrtCoefDN);
-        //printf("\nTN\n%lf", sqrtCoefTN);
-        //printf("\nQN\n%lf", sqrtCoefQN);
         sqrtCoefD = sqrtComponents(sqrtCoefDN, psiU, 1);
         sqrtCoefT = sqrtComponents(sqrtCoefTN, psiH, aCorr);
         sqrtCoefQ = sqrtComponents(sqrtCoefQN, psiH, aCorr);
         starUt = sqrt(sqrtCoefD * sqrtCoefD * windS * windS);
         starT = -1 * sqrtCoefT * (surfaceT - potT);
-        starQ = -1 * sqrtCoefQ * (interfSpecificQ - specificQ);
-        fluxS = -1 * pressure * 1004.67 * starU * starT;
-        fluxL = -1 * pressure * enthalpyL * starU * starQ;
-        printf("\n\nLatent Heat Flux Old %lf", fluxL);
+        starQ = -1 * sqrtCoefQ * (satSpecificQ - specificQ);
+        fluxS = -1 * density * 1004.67 * starU * starT;
         stability = 1 / ((1 - sqrtCoefDN * psiU / karman) * (1 - sqrtCoefQN * psiH / (aCorr * karman)));
         gustiness = sqrt(1 + pow(wg / windU, 2));
-        fluxL = pressure * enthalpyL * coefEN * windU * (interfSpecificQ - specificQ) * gustiness * stability;
-        //fluxT = -1 * pressure * starU * starU;
-        tau = starU * starU * pressure;
-
-        printf("\n\nLoop counter %d", i);
-        printf("\n\nSensible Heat Flux %lf", fluxS);
-        printf("\n\nLatent Heat Flux %lf", fluxL);
-        printf("\n\nTAU %lf", tau);
-
+        fluxL = density * enthalpyL * coefEN * windU * (satSpecificQ - specificQ) * gustiness * stability;
+        tau = starU * starU * density;
         starU = starUt;
-        //starU = 0.1277;
-        //printf("\npsiC(zeta)\n%lf", psiC(zeta));
     }
 
-    //calcZeta();
-
-    //printf("\nZeta\n%lf", zeta);
-
-    //starT = scalingParam(coefTN, surfaceT, potT);
-    
- /*   reynoldsR = 30;
-    reynoldsConvert();
-    printf("\nRR\n%lf", reynoldsR);
-    printf("\nRT\n%lf", reynoldsT);
-    printf("\nRQ\n%lf", reynoldsQ);
-*/
+    struct coare final;
+    final.loops = i;
+    final.sensible = fluxS;
+    final.latent = fluxL;
+    final.tau = tau;
+    return final;
 }
