@@ -19,6 +19,13 @@ extern double specificQ;
 extern double satSpecificQ;
 extern double reynoldsR;
 
+void updateSpecificQ(double latent)
+{
+    deltaSpecificQ = latent / (enthalpyV(airT) * windV * density);
+    specificQ += deltaSpecificQ * dt * deltaQCoef;
+    specificQ = specificQ * refresh + initSpecificQ * (1 - refresh);
+}
+
 int main() // run function returns a struct, stored into struct results and then printed
 {
     
@@ -27,17 +34,16 @@ int main() // run function returns a struct, stored into struct results and then
     struct coare results = run();
     printf("\n\n Latent Flux %lf, Loops %d", results.latent, results.loops);
 
-    deltaSpecificQ = results.latent / (enthalpyV(airT) * windV * density);        
+    //deltaSpecificQ = results.latent / (enthalpyV(airT) * windV * density);        
     printf("\n\n Delta specificQ %lf", deltaSpecificQ);
 
-    specificQ += deltaSpecificQ * dt * deltaQCoef;
+    updateSpecificQ(results.latent);
 
     for(int i = 0; i < steps; i++)
     {
         results = run();
-        deltaSpecificQ = results.latent / (enthalpyV(airT) * windV * density);        
-        specificQ += deltaSpecificQ * dt * deltaQCoef;
-        specificQ = specificQ * refresh + initSpecificQ * (1 - refresh);
+        //deltaSpecificQ = results.latent / (enthalpyV(airT) * windV * density);        
+        updateSpecificQ(results.latent);
         printf("\n%lf", specificQ);
     }
 
