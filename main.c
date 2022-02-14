@@ -5,30 +5,39 @@
 #include "inputs.h"
 
 double deltaSpecificQ;
+double initSpecificQ;
+
+extern double refresh;
+extern int steps;
+extern double dt;
+extern double deltaQCoef;
 
 extern double airT;
 extern double windV;
 extern double density;
 extern double specificQ;
 extern double satSpecificQ;
+extern double reynoldsR;
 
 int main() // run function returns a struct, stored into struct results and then printed
 {
     
     takeInputs();
+    initSpecificQ = specificQ;
     struct coare results = run();
     printf("\n\n Latent Flux %lf, Loops %d", results.latent, results.loops);
 
     deltaSpecificQ = results.latent / (enthalpyV(airT) * windV * density);        
     printf("\n\n Delta specificQ %lf", deltaSpecificQ);
 
-    specificQ += deltaSpecificQ;
+    specificQ += deltaSpecificQ * dt * deltaQCoef;
 
-    for(int i = 0; i < 100; i++)
+    for(int i = 0; i < steps; i++)
     {
         results = run();
         deltaSpecificQ = results.latent / (enthalpyV(airT) * windV * density);        
-        specificQ += deltaSpecificQ;
+        specificQ += deltaSpecificQ * dt * deltaQCoef;
+        specificQ = specificQ * refresh + initSpecificQ * (1 - refresh);
         printf("\n%lf", specificQ);
     }
 
