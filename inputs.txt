@@ -46,12 +46,12 @@ roughness_length_zo
 0.0005
 --------------------
 delta_t_(s)
-1
+.05
 steps_(cnt)
 100
 vertical_wind_(m/s)
 5
-retained_%
-0.95
+retained_%_per_second
+1
 deltaQ_coef
 1

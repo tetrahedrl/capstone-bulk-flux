@@ -23,7 +23,7 @@ void updateSpecificQ(double latent)
 {
     deltaSpecificQ = latent / (enthalpyV(airT) * windV * density);
     specificQ += deltaSpecificQ * dt * deltaQCoef;
-    specificQ = specificQ * refresh + initSpecificQ * (1 - refresh);
+    //specificQ = specificQ * refresh + initSpecificQ * (1 - refresh);
 }
 
 int main() // run function returns a struct, stored into struct results and then printed
@@ -49,6 +49,7 @@ int main() // run function returns a struct, stored into struct results and then
 
     printf("\n\n Latent Flux %lf, Loops %d", results.latent, results.loops);
     printf("\n\n Delta specificQ %lf", deltaSpecificQ);
+    printf("\n\n");
 
     
 }
