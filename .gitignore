@@ -6,6 +6,9 @@ inputs
 test
 project
 
+# Outputs #
+out.txt
+
 # Directories #
 /other
 /data

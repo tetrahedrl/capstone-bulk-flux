@@ -7,8 +7,8 @@ double alpha, beta, profileGamma, aCorr, grav, invZ, albedo, emissiv, karman;
 double measureZ, windU, surfaceT, airT, specificQ, precip, longwave, solar, density;
 double surfaceTPrevious, surfaceQPrevious;
 double wg, coefEN, coefHN, roughZ;
-double dt, windV, refresh, deltaQCoef;
-int steps;
+double dt, volZ, refresh, deltaQCoef;
+double period;
 
 
 void takeInputs()
@@ -68,9 +68,9 @@ void takeInputs()
     fscanf(inputFile, "%s", dummy);
     fscanf(inputFile, "%lf", &dt);
     fscanf(inputFile, "%s", dummy);
-    fscanf(inputFile, "%d", &steps);
+    fscanf(inputFile, "%lf", &period);
     fscanf(inputFile, "%s", dummy);
-    fscanf(inputFile, "%lf", &windV);
+    fscanf(inputFile, "%lf", &volZ);
     fscanf(inputFile, "%s", dummy);
     fscanf(inputFile, "%lf", &refresh);
     fscanf(inputFile, "%s", dummy);
