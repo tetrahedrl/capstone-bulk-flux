@@ -130,7 +130,7 @@ struct coare run() // here's where we put the current main() function from coare
     starQ = -1 * fabs(specificQ - satSpecificQ);
 
     i = 0;
-    prevL = 1;
+    prevL = -200000;
 
     while(abs(prevL - fluxL) > .001 && i < 20)
     {
@@ -155,6 +155,9 @@ struct coare run() // here's where we put the current main() function from coare
         stability = 1 / ((1 - sqrtCoefDN * psiU / karman) * (1 - sqrtCoefQN * psiH / (aCorr * karman)));
         gustiness = sqrt(1 + pow(wg / windU, 2));
         fluxL = density * enthalpyL * coefEN * windU * (satSpecificQ - specificQ) * gustiness * stability;
+        printf("\n\n%lf\n%lf\n%lf\n%lf\n%lf\n%lf\n%lf\n%lf\n%lf", fluxL, density, enthalpyL, coefEN, windU, satSpecificQ, specificQ, gustiness, stability);
+        printf("\n\n%lf", specificQ / satSpecificQ);
+        printf("\n\n%lf and %lf", specificQ, satSpecificQ);
         tau = starU * starU * density;
         starU = starUt;
     }

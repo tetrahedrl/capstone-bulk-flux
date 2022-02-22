@@ -46,9 +46,9 @@ roughness_length_zo
 0.0005
 --------------------
 step_length_dt_(s)
-30
+60
 simulate_period_t_(s)
-10000
+21600
 absorption_volume_height_z_(m)
 10
 retained_%_per_second_[deprecated]

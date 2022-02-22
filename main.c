@@ -44,7 +44,9 @@ int main() // run function returns a struct, stored into struct results and then
         results = run();
         //deltaSpecificQ = results.latent / (enthalpyV(airT) * volZ * density);        
         updateSpecificQ(results.latent);
-        fprintf(output, "%lf\n", specificQ / satSpecificQ);
+        fprintf(output, "%lf\n", specificQ);
+        
+        //fprintf(output, "\n%lf\n", (satSpecificQ - specificQ) / satSpecificQ);
     }
 
     printf("\n\n Latent Flux %lf, Loops %d", results.latent, results.loops);
