@@ -10,6 +10,9 @@ double wg, coefEN, coefHN, roughZ;
 double dt, volZ, refresh, deltaQCoef;
 double period;
 
+double precipBegin;
+double precipEnd;
+
 
 void takeInputs()
 {
@@ -47,8 +50,8 @@ void takeInputs()
     fscanf(inputFile, "%lf", &airT);
     fscanf(inputFile, "%s", dummy);
     fscanf(inputFile, "%lf", &specificQ);
-    fscanf(inputFile, "%s", dummy);
-    fscanf(inputFile, "%lf", &precip);
+    //fscanf(inputFile, "%s", dummy);
+    //fscanf(inputFile, "%lf", &precip);
     fscanf(inputFile, "%s", dummy);
     fscanf(inputFile, "%lf", &longwave);
     fscanf(inputFile, "%s", dummy);
@@ -75,4 +78,14 @@ void takeInputs()
     fscanf(inputFile, "%lf", &refresh);
     fscanf(inputFile, "%s", dummy);
     fscanf(inputFile, "%lf", &deltaQCoef);
+
+    fscanf(inputFile, "%s", dummy);
+    fscanf(inputFile, "%s", dummy);
+    fscanf(inputFile, "%lf", &precipBegin);
+    fscanf(inputFile, "%s", dummy);
+    fscanf(inputFile, "%lf", &precipEnd);
+    fscanf(inputFile, "%s", dummy);
+    fscanf(inputFile, "%lf", &precip);
+
+
 }

@@ -39,12 +39,12 @@ int main() // run function returns a struct, stored into struct results and then
 
     updateSpecificQ(results.latent);
 
-    for(int i = 0; i < (int) period / dt; i++)
+    for(int time = 0; time < (int) period / dt; time++)
     {
         results = run();
         //deltaSpecificQ = results.latent / (enthalpyV(airT) * volZ * density);        
         updateSpecificQ(results.latent);
-        fprintf(output, "%lf\n", specificQ);
+        fprintf(output, "%lf\n", results.sensible);
         
         //fprintf(output, "\n%lf\n", (satSpecificQ - specificQ) / satSpecificQ);
     }
