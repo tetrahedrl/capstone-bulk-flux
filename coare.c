@@ -117,6 +117,10 @@ void getPsi(double z)
 
 struct coare run() // here's where we put the current main() function from coare.c
 {
+
+
+    FILE *conv = fopen("converge.txt", "a");
+
     viscAir = kinVisc(airT);
     enthalpyL = enthalpyV(airT);
     windS = sqrt((windU * windU) + (wg * wg));
@@ -132,7 +136,9 @@ struct coare run() // here's where we put the current main() function from coare
     i = 0;
     prevL = -200000;
 
-    while(abs(prevL - fluxL) > .001 && i < 20)
+
+
+    while(fabs(prevL - fluxL) > .0000001 && i < 20)
     {
         prevL = fluxL;
         i++;
@@ -160,7 +166,12 @@ struct coare run() // here's where we put the current main() function from coare
         printf("\n\n%lf and %lf", specificQ, satSpecificQ);
         tau = starU * starU * density;
         starU = starUt;
+
+        fprintf(conv, "\n%lf, %lf, %lf, %lf, %lf", zeta, starU, starT, starQ, fluxL);
     }
+
+    fprintf(conv, ";\n");
+    fclose(conv);
 
     struct coare final;
     final.loops = i;

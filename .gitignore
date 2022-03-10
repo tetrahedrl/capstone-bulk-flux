@@ -8,6 +8,8 @@ project
 
 # Outputs #
 out.txt
+converge.txt
+*.xlsx
 
 # Directories #
 /other

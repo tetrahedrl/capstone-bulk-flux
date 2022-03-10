@@ -18,6 +18,7 @@ extern double density;
 extern double specificQ;
 extern double satSpecificQ;
 extern double reynoldsR;
+extern double i;
 
 void updateSpecificQ(double latent)
 {
@@ -29,6 +30,11 @@ void updateSpecificQ(double latent)
 int main() // run function returns a struct, stored into struct results and then printed
 {
     FILE *output = fopen("out.txt", "w");
+
+    FILE *conv = fopen("converge.txt", "w");
+    fprintf(conv, "");
+    fclose(conv);
+    
     takeInputs();
     initSpecificQ = specificQ;
     struct coare results = run();
@@ -44,8 +50,8 @@ int main() // run function returns a struct, stored into struct results and then
         results = run();
         //deltaSpecificQ = results.latent / (enthalpyV(airT) * volZ * density);        
         updateSpecificQ(results.latent);
-        fprintf(output, "%lf\n", results.sensible);
-        
+        fprintf(output, "%d,%d,%3.8lf,%3.8lf,%3.8lf\n", time, i, results.latent, deltaSpecificQ, specificQ);
+        //"%20.12lf\n"
         //fprintf(output, "\n%lf\n", (satSpecificQ - specificQ) / satSpecificQ);
     }
 
