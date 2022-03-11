@@ -31,6 +31,7 @@ int main() // run function returns a struct, stored into struct results and then
 {
     FILE *output = fopen("out.txt", "w");
 
+    // clear convergence.txt
     FILE *conv = fopen("converge.txt", "w");
     fprintf(conv, "");
     fclose(conv);
@@ -38,13 +39,7 @@ int main() // run function returns a struct, stored into struct results and then
     takeInputs();
     initSpecificQ = specificQ;
     struct coare results = run();
-    printf("\n\n Latent Flux %lf, Loops %d", results.latent, results.loops);
-
-    //deltaSpecificQ = results.latent / (enthalpyV(airT) * volZ * density);        
-    printf("\n\n Delta specificQ %lf", deltaSpecificQ);
-
-    updateSpecificQ(results.latent);
-
+    
     for(int time = 0; time < (int) period / dt; time++)
     {
         results = run();

@@ -167,10 +167,11 @@ struct coare run() // here's where we put the current main() function from coare
         tau = starU * starU * density;
         starU = starUt;
 
-        fprintf(conv, "\n%lf, %lf, %lf, %lf, %lf", zeta, starU, starT, starQ, fluxL);
+        //fprintf(conv, "%lf,%lf,%lf,%lf,%lf;", zeta, starU, starT, starQ, fluxL);
+        fprintf(conv, "%lf,", reynoldsR);
     }
 
-    fprintf(conv, ";\n");
+    fprintf(conv, "\n");
     fclose(conv);
 
     struct coare final;
