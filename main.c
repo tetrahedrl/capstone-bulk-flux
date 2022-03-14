@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "def.h"
 #include "coare.h"
 #include "inputs.h"
+#include "def.h"
 
 double deltaSpecificQ;
 double initSpecificQ;
@@ -27,7 +27,7 @@ void updateSpecificQ(double latent)
     //specificQ = specificQ * refresh + initSpecificQ * (1 - refresh);
 }
 
-int main() // run function returns a struct, stored into struct results and then printed
+void timeLoop() // run function returns a struct, stored into struct results and then printed
 {
     FILE *output = fopen("out.txt", "w");
 
@@ -36,7 +36,6 @@ int main() // run function returns a struct, stored into struct results and then
     fprintf(conv, "");
     fclose(conv);
     
-    takeInputs();
     initSpecificQ = specificQ;
     struct coare results = run();
     
@@ -56,3 +55,8 @@ int main() // run function returns a struct, stored into struct results and then
 
     fclose(output);
 }
+
+
+
+
+
