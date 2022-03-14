@@ -22,8 +22,8 @@ extern double i;
 
 void updateSpecificQ(double latent)
 {
-    deltaSpecificQ = latent / (enthalpyV(airT) * volZ * density);
-    specificQ += deltaSpecificQ * dt * deltaQCoef;
+    deltaSpecificQ = deltaQCoef * latent / (enthalpyV(airT) * volZ * density);
+    specificQ += deltaSpecificQ * dt;
     //specificQ = specificQ * refresh + initSpecificQ * (1 - refresh);
 }
 
@@ -43,9 +43,11 @@ int main() // run function returns a struct, stored into struct results and then
     for(int time = 0; time < (int) (period / dt); time++)
     {
         results = run();
+        fprintf(output, "%d,%d,%3.8lf,%3.8lf,%3.8lf\n", (int) (time * dt), i, results.latent, deltaSpecificQ, specificQ);
+        
         //deltaSpecificQ = results.latent / (enthalpyV(airT) * volZ * density);        
         updateSpecificQ(results.latent);
-        fprintf(output, "%d,%d,%3.8lf,%3.8lf,%3.8lf\n", (int) (time * dt), i, results.latent, deltaSpecificQ, specificQ);
+        
         //"%20.12lf\n"
         //fprintf(output, "\n%lf\n", (satSpecificQ - specificQ) / satSpecificQ);
     }
