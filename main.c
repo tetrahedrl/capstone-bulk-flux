@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+
 #include "math.h"
 #include "coare.h"
 #include "inputs.h"
@@ -17,35 +18,17 @@ void timeLoop(CoareData looperInputs)
 {
     double fluxL = 0;
 
-    CoareData coareIn;
-    coareIn.alpha = looperInputs.alpha;
-    coareIn.gamma = looperInputs.gamma;
-    coareIn.a = looperInputs.a;
-    coareIn.g = looperInputs.g;
-    coareIn.karman = looperInputs.karman;
-    coareIn.measureZ = looperInputs.measureZ;
-    coareIn.u = looperInputs.u;
-    coareIn.surfaceT = looperInputs.surfaceT;
-    coareIn.airT = looperInputs.airT;
-    coareIn.q = looperInputs.q;
-    coareIn.rho = looperInputs.rho;
-    coareIn.wgGuess = looperInputs.wgGuess;
-    coareIn.cEN = looperInputs.cEN;
-    coareIn.cHN = looperInputs.cHN;
-    coareIn.z0 = looperInputs.z0;
+    CoareData coareIn = looperInputs;
 
     mkdir("out");
-    char tempStr[80] = "out/";
-    strcat(tempStr, looperInputs.dest);
-    mkdir(tempStr);
 
     char filecntString[80];
     sprintf(filecntString, "%d", looperInputs.filecnt);
 
     char filename[80] = "out/";
     strcat(filename, looperInputs.dest);
+    mkdir(filename);
     strcat(filename, "/");
-
 
     strcat(filename, looperInputs.modVariable);
     mkdir(filename);
@@ -53,11 +36,12 @@ void timeLoop(CoareData looperInputs)
     strcpy(coareFilename, filename);
     strcat(filename, ".txt");
 
+    strcat(coareFilename, "/");
+
     char convFilename[80];
     strcpy(convFilename, coareFilename);
     strcat(convFilename, "converge");
     mkdir(convFilename);
-
     strcat(convFilename, "/");
     strcat(coareFilename, filecntString);
     strcat(coareFilename, ".txt");
