@@ -4,7 +4,7 @@
 
 
 // Run COARE algorithm, returning latent heat flux and writing results to [coareFilename].txt
-double runCoare(CoareInputs inputs, char coareFilename[]);
+double runCoare(CoareInputs inputs);
 
 // return enthalpy of vaporization for temp t
 double enthalpyV(double t);

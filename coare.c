@@ -100,9 +100,10 @@ double getPsi(double z, double gamma, int type)
 /*
 Run COARE algorithm, returning latent heat flux and writing results to [coareFilename].txt
 */
-double runCoare(CoareInputs inputs, char coareFilename[])
+double runCoare(CoareData inputs)
 {
-    FILE *conv = fopen(coareFilename, "a");
+    FILE *coare = fopen(inputs.coareFilename, "a");
+    FILE *conv = fopen(inputs.convFilename, "a");
 
     double alpha = inputs.alpha;
     double gamma = inputs.gamma;
@@ -148,29 +149,42 @@ double runCoare(CoareInputs inputs, char coareFilename[])
 
         zeta = calcZeta(measureZ, karman, grav, airT, starT, starQ, starU);
         roughZ = calcRoughZ(alpha, starU, grav);
+
         rR = starU * roughZ / viscAir;
         rT = reynoldsConvert(rR, 0);
         rQ = reynoldsConvert(rR, 1);
+
         psiU = getPsi(zeta, gamma, 0);
         psiH = getPsi(zeta, gamma, 1);
+
         sqrtCoefDN = sqrtNeutrals(rR, 1., viscAir, starU, karman, measureZ);
         sqrtCoefTN = sqrtNeutrals(rT, aCorr, viscAir, starU, karman, measureZ);
         sqrtCoefQN = sqrtNeutrals(rQ, aCorr, viscAir, starU, karman, measureZ);
+
         sqrtCoefD = sqrtComponents(sqrtCoefDN, psiU, 1., karman);
         sqrtCoefT = sqrtComponents(sqrtCoefTN, psiH, aCorr, karman);
         sqrtCoefQ = sqrtComponents(sqrtCoefQN, psiH, aCorr, karman);
+
         starUt = sqrt(sqrtCoefD * sqrtCoefD * windS * windS);
         starT = -1 * sqrtCoefT * (surfaceT - potT);
         starQ = -1 * sqrtCoefQ * (satSpecificQ - specificQ);
+
         fluxS = -1 * density * 1004.67 * starU * starT;
+
         stability = 1 / ((1 - sqrtCoefDN * psiU / karman) * (1 - sqrtCoefQN * psiH / (aCorr * karman)));
         gustiness = sqrt(1 + pow(wg / windU, 2));
         fluxL = density * enthalpyL * coefEN * windU * (satSpecificQ - specificQ) * gustiness * stability;
+
         tau = starU * starU * density;
         starU = starUt;
+
+        fprintf(conv, "%lf,", fluxL);
+
     }
 
-    fprintf(conv, "%d,%lf,%lf,%lf,%lf,%lf,%lf\n", i, specificQ, fluxL, fluxS, tau, stability, gustiness);
+    fprintf(coare, "%d,%lf,%lf,%lf,%lf,%lf,%lf\n", i, specificQ, fluxL, fluxS, tau, stability, gustiness);
+    fclose(coare);
+    fprintf(conv, "\n");
     fclose(conv);
 
     return fluxL;

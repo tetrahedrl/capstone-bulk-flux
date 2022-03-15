@@ -1,58 +1,84 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "coare.h"
 #include "inputs.h"
 #include "def.h"
 
-double deltaSpecificQ;
-double initSpecificQ;
-
-extern double refresh;
-extern double period;
-extern double dt;
-extern double deltaQCoef;
-
-extern double airT;
-extern double volZ;
-extern double density;
-extern double specificQ;
-extern double satSpecificQ;
-extern double reynoldsR;
-extern double i;
-
-void updateSpecificQ(double latent)
+double deltaSpecificQ(double latent, double deltaQCoef, double density, double dt, double airT)
 {
-    deltaSpecificQ = deltaQCoef * latent / (enthalpyV(airT) * volZ * density);
-    specificQ += deltaSpecificQ * dt;
-    //specificQ = specificQ * refresh + initSpecificQ * (1 - refresh);
+    double dq = deltaQCoef * latent / (enthalpyV(airT) * density);
+    return dq * dt;
 }
 
-void timeLoop() // run function returns a struct, stored into struct results and then printed
+void timeLoop(CoareData looperInputs) 
 {
-    FILE *output = fopen("out.txt", "w");
+    double fluxL = 0;
 
-    // clear converge.txt
-    FILE *conv = fopen("converge.txt", "w");
-    fprintf(conv, "");
-    fclose(conv);
+    CoareData coareIn;
+    coareIn.alpha = looperInputs.alpha;
+    coareIn.gamma = looperInputs.gamma;
+    coareIn.a = looperInputs.a;
+    coareIn.g = looperInputs.g;
+    coareIn.karman = looperInputs.karman;
+    coareIn.measureZ = looperInputs.measureZ;
+    coareIn.u = looperInputs.u;
+    coareIn.surfaceT = looperInputs.surfaceT;
+    coareIn.airT = looperInputs.airT;
+    coareIn.q = looperInputs.q;
+    coareIn.rho = looperInputs.rho;
+    coareIn.wgGuess = looperInputs.wgGuess;
+    coareIn.cEN = looperInputs.cEN;
+    coareIn.cHN = looperInputs.cHN;
+    coareIn.z0 = looperInputs.z0;
+
+    char filecntString[80];
+    sprintf(filecntString, "%d", looperInputs.filecnt);
+
+    char filename[80];
+    strcpy(filename, looperInputs.dest);
+    strcat(filename, "/");
     
-    initSpecificQ = specificQ;
-    struct coare results = run();
+    char coareFilename[80];
+    strcpy(coareFilename, filename);
+
+    strcat(filename, looperInputs.modVariable);
+    strcat(filename, ".txt");
+
+    strcat(coareFilename, looperInputs.modVariable);
+    strcat(coareFilename, "/");
+
+    char convFilename[80];
+    strcpy(convFilename, coareFilename);
+    strcat(convFilename, "converge/");
+
+    strcat(coareFilename, filecntString);
+    strcat(coareFilename, ".txt");
     
-    for(int time = 0; time < (int) (period / dt); time++)
+    strcat(convFilename, filecntString);
+    strcat(convFilename, "converge.txt");
+
+
+
+
+    strcpy(coareIn.coareFilename, coareFilename);
+    strcpy(coareIn.convFilename, convFilename);
+    FILE *output = fopen(filename, "a");
+
+
+    
+    for(int time = 0; time < (int) (looperInputs.period / looperInputs.dt); time++)
     {
-        results = run();
-        fprintf(output, "%d,%d,%3.8lf,%3.8lf,%3.8lf\n", (int) (time * dt), i, results.latent, deltaSpecificQ, specificQ);
-        
-        //deltaSpecificQ = results.latent / (enthalpyV(airT) * volZ * density);        
-        updateSpecificQ(results.latent);
-        
+        fluxL = runCoare(coareIn);        
+        fprintf(output, "%lf,", fluxL);      
+        coareIn.q += deltaSpecificQ(fluxL, looperInputs.dqCoef, looperInputs.rho, looperInputs.dt, looperInputs.airT);
+
         //"%20.12lf\n"
         //fprintf(output, "\n%lf\n", (satSpecificQ - specificQ) / satSpecificQ);
     }
 
-    printf("\nRan for %d loops over %.0lf seconds with dt %.2lf\n\n", ((int) (period / dt)), period, dt);
-
+    fprintf(output, "\n");
+    printf("\nRan for %d loops over %.0lf seconds with dt %.2lf\n\n", ((int) (looperInputs.period / looperInputs.dt)), looperInputs.period, looperInputs.dt);
     fclose(output);
 }
 
