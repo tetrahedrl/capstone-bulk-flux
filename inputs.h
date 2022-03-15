@@ -1,4 +1,5 @@
+#include "def.h"
 #ifndef INPUTS_H
 #define INPUTS_H
-void takeInputs();
+CoareData takeInputs();
 #endif

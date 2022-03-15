@@ -13,5 +13,6 @@ converge.txt
 
 # Directories #
 /other
+/out
 /data
 /.vscode

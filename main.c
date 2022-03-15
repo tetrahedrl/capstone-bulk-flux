@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include "math.h"
 #include "coare.h"
 #include "inputs.h"
 #include "def.h"
@@ -32,26 +34,31 @@ void timeLoop(CoareData looperInputs)
     coareIn.cHN = looperInputs.cHN;
     coareIn.z0 = looperInputs.z0;
 
+    mkdir("out");
+    char tempStr[80] = "out/";
+    strcat(tempStr, looperInputs.dest);
+    mkdir(tempStr);
+
     char filecntString[80];
     sprintf(filecntString, "%d", looperInputs.filecnt);
 
-    char filename[80];
-    strcpy(filename, looperInputs.dest);
+    char filename[80] = "out/";
+    strcat(filename, looperInputs.dest);
     strcat(filename, "/");
-    
-    char coareFilename[80];
-    strcpy(coareFilename, filename);
+
 
     strcat(filename, looperInputs.modVariable);
+    mkdir(filename);
+    char coareFilename[80];
+    strcpy(coareFilename, filename);
     strcat(filename, ".txt");
-
-    strcat(coareFilename, looperInputs.modVariable);
-    strcat(coareFilename, "/");
 
     char convFilename[80];
     strcpy(convFilename, coareFilename);
-    strcat(convFilename, "converge/");
+    strcat(convFilename, "converge");
+    mkdir(convFilename);
 
+    strcat(convFilename, "/");
     strcat(coareFilename, filecntString);
     strcat(coareFilename, ".txt");
     
@@ -65,7 +72,18 @@ void timeLoop(CoareData looperInputs)
     strcpy(coareIn.convFilename, convFilename);
     FILE *output = fopen(filename, "a");
 
+    double windU = looperInputs.u;
+    double wg = looperInputs.wgGuess;
+    double windS = sqrt((windU * windU) + (wg * wg));
+    double potDiffT = fabs(looperInputs.airT - (looperInputs.surfaceT + 0.0098 * looperInputs.measureZ));   
+    double starU = 0.04 * windS;
+    double starT = -1 * 0.04 * potDiffT;
+    double satSpecificQ = satMix(looperInputs.airT);
+    double starQ = -1 * fabs(looperInputs.q - satSpecificQ);
 
+    coareIn.starU = starU;
+    coareIn.starT = starT;
+    coareIn.starQ = starQ;
     
     for(int time = 0; time < (int) (looperInputs.period / looperInputs.dt); time++)
     {

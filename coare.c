@@ -3,6 +3,7 @@
 #include <math.h>
 #include "def.h"
 
+
 // return enthalpy of vaporization for temp t
 double enthalpyV(double t)
 {
@@ -177,7 +178,7 @@ double runCoare(CoareData inputs)
 
         tau = starU * starU * density;
         starU = starUt;
-
+  
         fprintf(conv, "%lf,", fluxL);
 
     }
