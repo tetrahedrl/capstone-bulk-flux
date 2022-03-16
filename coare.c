@@ -4,6 +4,8 @@
 
 #include "def.h"
 
+double fluxLFinal;
+double humidityFinal;
 
 // return enthalpy of vaporization for temp t
 double enthalpyV(double t)
@@ -102,7 +104,7 @@ double getPsi(double z, double gamma, int type)
 /*
 Run COARE algorithm, returning latent heat flux and writing results to [coareFilename].txt
 */
-double runCoare(CoareData inputs)
+void runCoare(CoareData inputs, double *humidityFinal, double *fluxLFinal)
 {
     FILE *coare = fopen(inputs.coareFilename, "a");
     FILE *conv = fopen(inputs.convFilename, "a");
@@ -189,5 +191,7 @@ double runCoare(CoareData inputs)
     fprintf(conv, "\n");
     fclose(conv);
 
-    return fluxL;
+    *fluxLFinal = fluxL;
+    *humidityFinal = specificQ;
+    
 }

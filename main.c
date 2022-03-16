@@ -8,26 +8,32 @@
 #include "inputs.h"
 #include "def.h"
 
+
 double deltaSpecificQ(double latent, double deltaQCoef, double density, double dt, double airT)
 {
     double dq = deltaQCoef * latent / (enthalpyV(airT) * density);
     return dq * dt;
 }
 
-void timeLoop(CoareData looperInputs) 
+void timeLoop(CoareData in) 
 {
     double fluxL = 0;
+    double humidity = 0;
+    double prevHumid = 0;
+    double timePrint = 0;
+    double prevT = 0;
+    int printed = 0;
 
-    CoareData coareIn = looperInputs;
+    CoareData coareIn = in;
 
     char filecntString[80];
-    sprintf(filecntString, "%d", looperInputs.filecnt);
+    sprintf(filecntString, "%d", in.filecnt);
 
     char filename[80];
-    strcpy(filename, looperInputs.dest);
+    strcpy(filename, in.dest);
     strcat(filename, "/");
 
-    strcat(filename, looperInputs.modVariable);
+    strcat(filename, in.modVariable);
     mkdir(filename);
     char coareFilename[80];
     strcpy(coareFilename, filename);
@@ -53,31 +59,42 @@ void timeLoop(CoareData looperInputs)
     strcpy(coareIn.convFilename, convFilename);
     FILE *output = fopen(filename, "a");
 
-    double windU = looperInputs.u;
-    double wg = looperInputs.wgGuess;
+    double windU = in.u;
+    double wg = in.wgGuess;
     double windS = sqrt((windU * windU) + (wg * wg));
-    double potDiffT = fabs(looperInputs.airT - (looperInputs.surfaceT + 0.0098 * looperInputs.measureZ));   
+    double potDiffT = fabs(in.airT - (in.surfaceT + 0.0098 * in.measureZ));   
     double starU = 0.04 * windS;
     double starT = -1 * 0.04 * potDiffT;
-    double satSpecificQ = satMix(looperInputs.airT);
-    double starQ = -1 * fabs(looperInputs.q - satSpecificQ);
+    double satSpecificQ = satMix(in.airT);
+    double starQ = -1 * fabs(in.q - satSpecificQ);
 
     coareIn.starU = starU;
     coareIn.starT = starT;
     coareIn.starQ = starQ;
     
-    for(int time = 0; time < (int) (looperInputs.period / looperInputs.dt); time++)
+    for(int time = 0; time < (int) (in.period / in.dt); time++)
     {
-        fluxL = runCoare(coareIn);        
-        fprintf(output, "%lf,", fluxL);      
-        coareIn.q += deltaSpecificQ(fluxL, looperInputs.dqCoef, looperInputs.rho, looperInputs.dt, looperInputs.airT);
+        runCoare(coareIn, &humidity, &fluxL);  
+        double relative = humidity / satSpecificQ;
+        
+        if(relative > in.humidCutoff && !printed)
+        {
+            double prevRelative = prevHumid / satSpecificQ;
+            timePrint = prevT + (time * in.dt - prevT) * (in.humidCutoff - prevRelative) / (relative - prevRelative);
+            printed = 1;
+        }      
+        //fprintf(output, "%lf, %lf\n", time * in.dt, fluxL);      
+        
+        coareIn.q += deltaSpecificQ(fluxL, in.dqCoef, in.rho, in.dt, in.airT);
 
+        prevHumid = humidity;
+        prevT = time * in.dt;
         //"%20.12lf\n"
         //fprintf(output, "\n%lf\n", (satSpecificQ - specificQ) / satSpecificQ);
     }
 
-    fprintf(output, "\n");
-    printf("\nRan for %d loops over %.0lf seconds with dt %.2lf\n\n", ((int) (looperInputs.period / looperInputs.dt)), looperInputs.period, looperInputs.dt);
+    fprintf(output, "%lf,%lf\n", in.dqCoef, timePrint / 3600);
+    printf("\nRan for %d loops over %.0lf seconds with dt %.2lf\n\n", ((int) (in.period / in.dt)), in.period, in.dt);
     fclose(output);
 }
 

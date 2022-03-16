@@ -44,15 +44,15 @@ roughness_length_zo
 0.0005
 --------------------
 step_length_dt_(s)
-60
+3600
 simulate_period_t_(s)
-60000
+600000
 absorption_volume_height_z_(m)
 1
 retained_%_per_second_[deprecated]
 1
 deltaQ_coef
-0.01
+0.001
 --------------------
 precip_begin_time_(s)
 0
@@ -60,3 +60,6 @@ precip_end_time_(s)
 6000
 precip_rate_(mm/hr)
 30
+---------------------
+relative_humidity_saturation_print_at
+0.95

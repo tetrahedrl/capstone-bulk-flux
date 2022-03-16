@@ -10,6 +10,7 @@ double surfaceTPrevious, surfaceQPrevious;
 double wg, coefEN, coefHN, roughZ;
 double dt, volZ, refresh, deltaQCoef;
 double period;
+double humidityPrint;
 
 double precipBegin;
 double precipEnd;
@@ -87,6 +88,9 @@ CoareData takeInputs()
     fscanf(inputFile, "%lf", &precipEnd);
     fscanf(inputFile, "%s", dummy);
     fscanf(inputFile, "%lf", &precip);
+    fscanf(inputFile, "%s", dummy);
+    fscanf(inputFile, "%s", dummy);
+    fscanf(inputFile, "%lf", &humidityPrint);
 
     out.alpha = alpha;
     out.gamma = profileGamma;
@@ -107,6 +111,8 @@ CoareData takeInputs()
     out.dt = dt;
     out.period = period;
     out.dqCoef = deltaQCoef;
+
+    out.humidCutoff = humidityPrint;
 
     return out;
 }

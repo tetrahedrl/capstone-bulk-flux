@@ -35,6 +35,8 @@ typedef struct
     char coareFilename[80];
     char convFilename[80];
 
+    double humidCutoff;
+
 } CoareData;
 
 #endif
