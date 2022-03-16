@@ -20,14 +20,11 @@ void timeLoop(CoareData looperInputs)
 
     CoareData coareIn = looperInputs;
 
-    mkdir("out");
-
     char filecntString[80];
     sprintf(filecntString, "%d", looperInputs.filecnt);
 
-    char filename[80] = "out/";
-    strcat(filename, looperInputs.dest);
-    mkdir(filename);
+    char filename[80];
+    strcpy(filename, looperInputs.dest);
     strcat(filename, "/");
 
     strcat(filename, looperInputs.modVariable);
