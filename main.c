@@ -93,7 +93,7 @@ void timeLoop(CoareData in)
         //fprintf(output, "\n%lf\n", (satSpecificQ - specificQ) / satSpecificQ);
     }
 
-    fprintf(output, "%lf,%lf\n", in.dqCoef, timePrint / 3600);
+    fprintf(output, "%lf,%lf,%lf\n", in.dqCoef, windU, timePrint / 3600);
     printf("\nRan for %d loops over %.0lf seconds with dt %.2lf\n\n", ((int) (in.period / in.dt)), in.period, in.dt);
     fclose(output);
 }

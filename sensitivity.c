@@ -37,10 +37,18 @@ int main()
     CoareData test = takeInputs();
     strcpy(test.dest, destination);
     strcpy(test.modVariable, "dqCoef");
-    for(int i = 0; i < 100; i++)
+    double initialDQ = test.dqCoef;
+    test.u = 0;
+    for(int w = 0; w < 7; w++)
     {
-        test.filecnt = i;
-        test.dqCoef += 0.0001;
-        timeLoop(test);
+        test.u += 2;
+        test.dqCoef = initialDQ;
+        for(int i = 0; i < 100; i++)
+        {
+            test.filecnt = (w * 1000) + i;
+            test.dqCoef += 0.0001;
+            timeLoop(test);
+        }
+        
     }
 }
