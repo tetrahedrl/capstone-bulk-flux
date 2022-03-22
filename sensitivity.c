@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <dirent.h>
+#include <errno.h>
 
 #include "coare.h"
 #include "inputs.h"
@@ -10,10 +12,9 @@
 
 int main()
 {
-    struct stat s = {0};
     char destination[80] = "out/test";
-    char destCheck[80];
-    char iStr[80];
+    char destCheck[80] = "";
+    char iStr[80] = "";
 
     mkdir("out");
 
@@ -25,12 +26,17 @@ int main()
         strcpy(destCheck, destination);
         strcat(destCheck, iStr);
 
-        if (stat(destCheck, &s) == -1) {
+        DIR* dir = opendir(destCheck);
+        if (dir) 
+        {
+            closedir(dir);
+        }
+        else
+        {
             strcpy(destination, destCheck);
-            mkdir(destination);
+            mkdir(destCheck);
             break;
         }
-
         i++;
     }
 
