@@ -15,20 +15,20 @@ double sstCorrection()
     double salinitySB = 0.026;
     double expansionAlpha = 0.0003;
     double cpWater = 4184.;
-    double densityWater;
-    double viscWater;
+    double densityWater = 1023.;
+    double viscWater = 0.000000937;
+    double conductivityK = 0.615;
     
     double cooling = longwave - lastHL - lastHS; 
     double virtualCooling = lastHL * (salinitySB * cpWater / (expansionAlpha * enthalpyV(airT))) + cooling;
 
     double saundersLambda = 16. * virtualCooling * grav * expansionAlpha * densityWater * cpWater * pow(viscWater, 3);
-    saundersLambda = saundersLambda / (pow(lastStarU, 4) * (density / densityWater) * (density / densityWater) * karman * karman);
+    saundersLambda = saundersLambda / (pow(lastStarU, 4) * (density / densityWater) * (density / densityWater) * conductivityK * conductivityK);
     saundersLambda = 6. / pow((1 + pow(saundersLambda, (3./4.))), (1./3.));
 
     double subThickness = saundersLambda * viscWater / (sqrt(density / densityWater) * lastStarU);
 
-    double coolCorrection = cooling * subThickness / karman;
-
+    double coolCorrection = cooling * subThickness / conductivityK;
 
 }
 
