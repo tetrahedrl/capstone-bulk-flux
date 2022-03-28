@@ -37,6 +37,11 @@ typedef struct
 
     double humidCutoff;
 
+    double lastHL;
+    double lastHS;
+    double lastStarU;
+    double longwave;
+
 } CoareData;
 
 #endif

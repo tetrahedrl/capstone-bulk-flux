@@ -7,6 +7,31 @@
 double fluxLFinal;
 double humidityFinal;
 
+double alpha, gamma, aCorr, grav, karman, measureZ, windU, airT, surfaceT, specificQ, density, wg, coefEN, coefHN, roughZ, starQ, starT, starU, longwave;
+double lastHL, lastHS, lastStarU;
+
+double sstCorrection()
+{
+    double salinitySB = 0.026;
+    double expansionAlpha = 0.0003;
+    double cpWater = 4184.;
+    double densityWater;
+    double viscWater;
+    
+    double cooling = longwave - lastHL - lastHS; 
+    double virtualCooling = lastHL * (salinitySB * cpWater / (expansionAlpha * enthalpyV(airT))) + cooling;
+
+    double saundersLambda = 16. * virtualCooling * grav * expansionAlpha * densityWater * cpWater * pow(viscWater, 3);
+    saundersLambda = saundersLambda / (pow(lastStarU, 4) * (density / densityWater) * (density / densityWater) * karman * karman);
+    saundersLambda = 6. / pow((1 + pow(saundersLambda, (3./4.))), (1./3.));
+
+    double subThickness = saundersLambda * viscWater / (sqrt(density / densityWater) * lastStarU);
+
+    double coolCorrection = cooling * subThickness / karman;
+
+
+}
+
 // return enthalpy of vaporization for temp t
 double enthalpyV(double t)
 {
@@ -109,24 +134,28 @@ void runCoare(CoareData inputs, double *humidityFinal, double *fluxLFinal)
     FILE *coare = fopen(inputs.coareFilename, "a");
     FILE *conv = fopen(inputs.convFilename, "a");
 
-    double alpha = inputs.alpha;
-    double gamma = inputs.gamma;
-    double aCorr = inputs.a;
-    double grav = inputs.g;
-    double karman = inputs.karman;
-    double measureZ = inputs.measureZ;
-    double windU = inputs.u;
-    double surfaceT = inputs.surfaceT;
-    double airT = inputs.airT;
-    double specificQ = inputs.q;
-    double density = inputs.rho;
-    double wg = inputs.wgGuess;
-    double coefEN = inputs.cEN;
-    double coefHN = inputs.cHN;
-    double roughZ = inputs.z0;
-    double starQ = inputs.starQ;
-    double starT = inputs.starT;
-    double starU = inputs.starU;
+    alpha = inputs.alpha;
+    gamma = inputs.gamma;
+    aCorr = inputs.a;
+    grav = inputs.g;
+    karman = inputs.karman;
+    measureZ = inputs.measureZ;
+    windU = inputs.u;
+    surfaceT = inputs.surfaceT;
+    airT = inputs.airT;
+    specificQ = inputs.q;
+    density = inputs.rho;
+    wg = inputs.wgGuess;
+    coefEN = inputs.cEN;
+    coefHN = inputs.cHN;
+    roughZ = inputs.z0;
+    starQ = inputs.starQ;
+    starT = inputs.starT;
+    starU = inputs.starU;
+    longwave = inputs.longwave;
+    lastHL = inputs.lastHL;
+    lastHS = inputs.lastHS;
+    lastStarU = inputs.lastStarU;
 
     double zeta = 0;
     double rR, rQ, rT;
