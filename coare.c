@@ -1,29 +1,38 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+
 #include "def.h"
 
-extern double alpha, beta, profileGamma, aCorr, grav, invZ, albedo, emissiv, karman; 
-extern double measureZ, windU, surfaceT, airT, specificQ, precip, longwave, solar, density;
-extern double surfaceTPrevious, surfaceQPrevious;
-extern double wg, coefEN, coefHN, roughZ;
+double fluxLFinal;
+double humidityFinal;
 
-double sqrtCoefDN, sqrtCoefTN, sqrtCoefQN, sqrtCoefD, sqrtCoefT, sqrtCoefQ;
-double viscAir, enthalpyL, windS, surfaceQ, potT, potDiffT, satSpecificQ, zeta, profileY;
-double starT, starQ, starU, starUt;
-double reynoldsR, reynoldsT, reynoldsQ;
-double psiU, psiH;
-double fluxS, fluxL, fluxT;
-double prevL = 1;
+double alpha, gamma, aCorr, grav, karman, measureZ, windU, airT, surfaceT, specificQ, density, wg, coefEN, coefHN, roughZ, starQ, starT, starU, longwave;
+double lastHL, lastHS, lastStarU;
 
-double stability;
-double gustiness;
-double tau;
+double sstCorrection()
+{
+    double salinitySB = 0.026;
+    double expansionAlpha = 0.0003;
+    double cpWater = 4184.;
+    double densityWater;
+    double viscWater;
+    
+    double cooling = longwave - lastHL - lastHS; 
+    double virtualCooling = lastHL * (salinitySB * cpWater / (expansionAlpha * enthalpyV(airT))) + cooling;
 
-int i;
+    double saundersLambda = 16. * virtualCooling * grav * expansionAlpha * densityWater * cpWater * pow(viscWater, 3);
+    saundersLambda = saundersLambda / (pow(lastStarU, 4) * (density / densityWater) * (density / densityWater) * karman * karman);
+    saundersLambda = 6. / pow((1 + pow(saundersLambda, (3./4.))), (1./3.));
+
+    double subThickness = saundersLambda * viscWater / (sqrt(density / densityWater) * lastStarU);
+
+    double coolCorrection = cooling * subThickness / karman;
+
+
+}
 
 // return enthalpy of vaporization for temp t
-
 double enthalpyV(double t)
 {
     return 100000 * (25 - 0.02274 * t);
@@ -49,19 +58,21 @@ double scalingParam(double coefTransfer, double total, double subtract)
     return -1 * sqrt(coefTransfer) * (total - subtract);
 }
 
-void calcZeta()
+double calcZeta(double measureZ, double karman, double grav, double t, double starT, double starQ, double starU)
 {
     //zeta = measureZ * ((karman * grav / (airT+273.)) * (starT + 0.61 * (airT+273.) * starQ) / (starU * starU));
-    zeta = measureZ * ((karman * grav / (airT)) * (starT + 0.61 * (airT) * starQ) / (starU * starU)); //C or K?
+    return measureZ * ((karman * grav / (t)) * (starT + 0.61 * (t) * starQ) / (starU * starU)); //C or K?
 }
 
-void calcRoughZ()
+double calcRoughZ(double alpha, double starU, double grav)
 {
-    roughZ = alpha * ((starU * starU) / grav); //+ 0.11 * (viscAir / starU);
+    return alpha * ((starU * starU) / grav); //+ 0.11 * (viscAir / starU);
 }
 
-void reynoldsConvert()
+// Uses reynolds number to calculate equivalents for temp (0) and humidity (1)
+double reynoldsConvert(double r, int type) 
 {
+    if (!(type == 0 || type == 1)) return -1;
     double range[7] = {0, 0.11, 0.85, 3.0, 10.0, 30.0, 100.0};
     double a[2][6] = {
         {0.177, 1.376, 1.026, 1.625, 4.661, 34.904}, 
@@ -73,28 +84,29 @@ void reynoldsConvert()
     };
     for(int i = 0; i < 6; i++)
     {
-        if (reynoldsR > range[i] && reynoldsR <= range[i + 1])
+        if (r > range[i] && r <= range[i + 1])
         {
-            reynoldsT = a[0][i] * pow(reynoldsR, b[0][i]);
-            reynoldsQ = a[1][i] * pow(reynoldsR, b[1][i]);
+            return a[type][i] * pow(r, b[type][i]);
         }
     }
 }
 
-double sqrtNeutrals(double reynolds, double correction)
+double sqrtNeutrals(double reynolds, double correction, double viscAir, double starU, double karman, double z)
 {
     double roughZEQ = (viscAir / starU) * reynolds;
-    return correction * (karman / log(measureZ / roughZEQ)); //log or log10
+    return correction * (karman / log(z / roughZEQ)); //log or log10
 }
 
-double sqrtComponents(double sqrtNeutral, double psi, double correction)
+double sqrtComponents(double sqrtNeutral, double psi, double correction, double karman)
 {
     return sqrtNeutral / (1 - (sqrtNeutral / (karman * correction)) * psi);
 }
 
-void getPsi(double z)
+// get psi function for wind U (0) or temp / humidity H (1)
+double getPsi(double z, double gamma, int type) 
 {
-    double y = cbrt(1. - profileGamma * z);
+    if (!(type == 0 || type == 1)) return -1;
+    double y = cbrt(1. - gamma * z);
     double psiC = 1.5 * log((y * y + y + 1) / 3) - sqrt(3) * atan((2 * y + 1) / sqrt(3)) + M_PI / sqrt(3);
     double psiKU = 2 * log((1 + sqrt(y)) / 2) + log((y + 1)/2);
     double psiKH = 2 * log((1 + y) / 2);
@@ -110,32 +122,57 @@ void getPsi(double z)
 
     */
 
-    psiU = (1 / (1 + (z * z))) * psiKU + ((z * z) / (1 + (z * z))) * psiC;
-    psiH = (1 / (1 + (z * z))) * psiKH + ((z * z) / (1 + (z * z))) * psiC;
+    if (type == 0) return (1 / (1 + (z * z))) * psiKU + ((z * z) / (1 + (z * z))) * psiC; // U
+    else return (1 / (1 + (z * z))) * psiKH + ((z * z) / (1 + (z * z))) * psiC; // H
 }
 
-
-struct coare run() // here's where we put the current main() function from coare.c
+/*
+Run COARE algorithm, returning latent heat flux and writing results to [coareFilename].txt
+*/
+void runCoare(CoareData inputs, double *humidityFinal, double *fluxLFinal)
 {
+    FILE *coare = fopen(inputs.coareFilename, "a");
+    FILE *conv = fopen(inputs.convFilename, "a");
 
+    alpha = inputs.alpha;
+    gamma = inputs.gamma;
+    aCorr = inputs.a;
+    grav = inputs.g;
+    karman = inputs.karman;
+    measureZ = inputs.measureZ;
+    windU = inputs.u;
+    surfaceT = inputs.surfaceT;
+    airT = inputs.airT;
+    specificQ = inputs.q;
+    density = inputs.rho;
+    wg = inputs.wgGuess;
+    coefEN = inputs.cEN;
+    coefHN = inputs.cHN;
+    roughZ = inputs.z0;
+    starQ = inputs.starQ;
+    starT = inputs.starT;
+    starU = inputs.starU;
+    longwave = inputs.longwave;
+    lastHL = inputs.lastHL;
+    lastHS = inputs.lastHS;
+    lastStarU = inputs.lastStarU;
 
-    FILE *conv = fopen("converge.txt", "a");
+    double zeta = 0;
+    double rR, rQ, rT;
+    double fluxS, stability, gustiness, tau;
+    double sqrtCoefDN, sqrtCoefTN, sqrtCoefQN, sqrtCoefD, sqrtCoefT, sqrtCoefQ, psiU, psiH;
+    double starUt = 0;
 
-    viscAir = kinVisc(airT);
-    enthalpyL = enthalpyV(airT);
-    windS = sqrt((windU * windU) + (wg * wg));
+    double viscAir = kinVisc(airT);
+    double enthalpyL = enthalpyV(airT);
+    double windS = sqrt((windU * windU) + (wg * wg));
 
-    potT = airT + 0.0098 * measureZ;
-    potDiffT = fabs(airT - (surfaceT + 0.0098 * measureZ));
-    satSpecificQ = satMix(airT);
+    double potT = airT + 0.0098 * measureZ;
+    double satSpecificQ = satMix(airT);
 
-    starU = 0.04 * windS;
-    starT = -1 * 0.04 * potDiffT;
-    starQ = -1 * fabs(specificQ - satSpecificQ);
-
-    i = 0;
-    prevL = -200000;
-
+    int i = 0;
+    double prevL = -1;
+    double fluxL = 0;
 
 
     while(fabs(prevL - fluxL) > .0000001 && i < 20)
@@ -143,38 +180,47 @@ struct coare run() // here's where we put the current main() function from coare
         prevL = fluxL;
         i++;
 
-        calcZeta();
-        calcRoughZ();
-        reynoldsR = starU * roughZ / viscAir;
-        reynoldsConvert();
-        getPsi(zeta);
-        sqrtCoefDN = sqrtNeutrals(reynoldsR, 1.);
-        sqrtCoefTN = sqrtNeutrals(reynoldsT, aCorr);
-        sqrtCoefQN = sqrtNeutrals(reynoldsQ, aCorr);
-        sqrtCoefD = sqrtComponents(sqrtCoefDN, psiU, 1);
-        sqrtCoefT = sqrtComponents(sqrtCoefTN, psiH, aCorr);
-        sqrtCoefQ = sqrtComponents(sqrtCoefQN, psiH, aCorr);
+        zeta = calcZeta(measureZ, karman, grav, airT, starT, starQ, starU);
+        roughZ = calcRoughZ(alpha, starU, grav);
+
+        rR = starU * roughZ / viscAir;
+        rT = reynoldsConvert(rR, 0);
+        rQ = reynoldsConvert(rR, 1);
+
+        psiU = getPsi(zeta, gamma, 0);
+        psiH = getPsi(zeta, gamma, 1);
+
+        sqrtCoefDN = sqrtNeutrals(rR, 1., viscAir, starU, karman, measureZ);
+        sqrtCoefTN = sqrtNeutrals(rT, aCorr, viscAir, starU, karman, measureZ);
+        sqrtCoefQN = sqrtNeutrals(rQ, aCorr, viscAir, starU, karman, measureZ);
+
+        sqrtCoefD = sqrtComponents(sqrtCoefDN, psiU, 1., karman);
+        sqrtCoefT = sqrtComponents(sqrtCoefTN, psiH, aCorr, karman);
+        sqrtCoefQ = sqrtComponents(sqrtCoefQN, psiH, aCorr, karman);
+
         starUt = sqrt(sqrtCoefD * sqrtCoefD * windS * windS);
         starT = -1 * sqrtCoefT * (surfaceT - potT);
         starQ = -1 * sqrtCoefQ * (satSpecificQ - specificQ);
+
         fluxS = -1 * density * 1004.67 * starU * starT;
+
         stability = 1 / ((1 - sqrtCoefDN * psiU / karman) * (1 - sqrtCoefQN * psiH / (aCorr * karman)));
         gustiness = sqrt(1 + pow(wg / windU, 2));
         fluxL = density * enthalpyL * coefEN * windU * (satSpecificQ - specificQ) * gustiness * stability;
+
         tau = starU * starU * density;
         starU = starUt;
-
-        //fprintf(conv, "%lf,%lf,%lf,%lf,%lf;", zeta, starU, starT, starQ, fluxL);
+  
         fprintf(conv, "%lf,", fluxL);
+
     }
 
+    fprintf(coare, "%d,%lf,%lf,%lf,%lf,%lf,%lf\n", i, specificQ, fluxL, fluxS, tau, stability, gustiness);
+    fclose(coare);
     fprintf(conv, "\n");
     fclose(conv);
 
-    struct coare final;
-    final.loops = i;
-    final.sensible = fluxS;
-    final.latent = fluxL;
-    final.tau = tau;
-    return final;
+    *fluxLFinal = fluxL;
+    *humidityFinal = specificQ;
+    
 }

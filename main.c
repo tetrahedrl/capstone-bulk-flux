@@ -1,58 +1,104 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "def.h"
+#include <string.h>
+#include <sys/stat.h>
+
+#include "math.h"
 #include "coare.h"
 #include "inputs.h"
+#include "def.h"
 
-double deltaSpecificQ;
-double initSpecificQ;
 
-extern double refresh;
-extern double period;
-extern double dt;
-extern double deltaQCoef;
-
-extern double airT;
-extern double volZ;
-extern double density;
-extern double specificQ;
-extern double satSpecificQ;
-extern double reynoldsR;
-extern double i;
-
-void updateSpecificQ(double latent)
+double deltaSpecificQ(double latent, double deltaQCoef, double density, double dt, double airT)
 {
-    deltaSpecificQ = deltaQCoef * latent / (enthalpyV(airT) * volZ * density);
-    specificQ += deltaSpecificQ * dt;
-    //specificQ = specificQ * refresh + initSpecificQ * (1 - refresh);
+    double dq = deltaQCoef * latent / (enthalpyV(airT) * density);
+    return dq * dt;
 }
 
-int main() // run function returns a struct, stored into struct results and then printed
+void timeLoop(CoareData in) 
 {
-    FILE *output = fopen("out.txt", "w");
+    double fluxL = 0;
+    double humidity = 0;
+    double prevHumid = 0;
+    double timePrint = 0;
+    double prevT = 0;
+    int printed = 0;
 
-    // clear converge.txt
-    FILE *conv = fopen("converge.txt", "w");
-    fprintf(conv, "");
-    fclose(conv);
+    CoareData coareIn = in;
+
+    char filecntString[80];
+    sprintf(filecntString, "%d", in.filecnt);
+
+    char filename[80];
+    strcpy(filename, in.dest);
+    strcat(filename, "/");
+
+    strcat(filename, in.modVariable);
+    mkdir(filename);
+    char coareFilename[80];
+    strcpy(coareFilename, filename);
+    strcat(filename, ".txt");
+
+    strcat(coareFilename, "/");
+
+    char convFilename[80];
+    strcpy(convFilename, coareFilename);
+    strcat(convFilename, "converge");
+    mkdir(convFilename);
+    strcat(convFilename, "/");
+    strcat(coareFilename, filecntString);
+    strcat(coareFilename, ".txt");
     
-    takeInputs();
-    initSpecificQ = specificQ;
-    struct coare results = run();
+    strcat(convFilename, filecntString);
+    strcat(convFilename, "converge.txt");
+
+
+
+
+    strcpy(coareIn.coareFilename, coareFilename);
+    strcpy(coareIn.convFilename, convFilename);
+    FILE *output = fopen(filename, "a");
+
+    double windU = in.u;
+    double wg = in.wgGuess;
+    double windS = sqrt((windU * windU) + (wg * wg));
+    double potDiffT = fabs(in.airT - (in.surfaceT + 0.0098 * in.measureZ));   
+    double starU = 0.04 * windS;
+    double starT = -1 * 0.04 * potDiffT;
+    double satSpecificQ = satMix(in.airT);
+    double starQ = -1 * fabs(in.q - satSpecificQ);
+
+    coareIn.starU = starU;
+    coareIn.starT = starT;
+    coareIn.starQ = starQ;
     
-    for(int time = 0; time < (int) (period / dt); time++)
+    for(int time = 0; time < (int) (in.period / in.dt); time++)
     {
-        results = run();
-        fprintf(output, "%d,%d,%3.8lf,%3.8lf,%3.8lf\n", (int) (time * dt), i, results.latent, deltaSpecificQ, specificQ);
+        runCoare(coareIn, &humidity, &fluxL);  
+        double relative = humidity / satSpecificQ;
         
-        //deltaSpecificQ = results.latent / (enthalpyV(airT) * volZ * density);        
-        updateSpecificQ(results.latent);
+        if(relative > in.humidCutoff && !printed)
+        {
+            double prevRelative = prevHumid / satSpecificQ;
+            timePrint = prevT + (time * in.dt - prevT) * (in.humidCutoff - prevRelative) / (relative - prevRelative);
+            printed = 1;
+        }      
+        //fprintf(output, "%lf, %lf\n", time * in.dt, fluxL);      
         
+        coareIn.q += deltaSpecificQ(fluxL, in.dqCoef, in.rho, in.dt, in.airT);
+
+        prevHumid = humidity;
+        prevT = time * in.dt;
         //"%20.12lf\n"
         //fprintf(output, "\n%lf\n", (satSpecificQ - specificQ) / satSpecificQ);
     }
 
-    printf("\nRan for %d loops over %.0lf seconds with dt %.2lf\n\n", ((int) (period / dt)), period, dt);
-
+    fprintf(output, "%lf,%lf,%lf\n", in.dqCoef, windU, timePrint / 3600);
+    printf("\nRan for %d loops over %.0lf seconds with dt %.2lf\n\n", ((int) (in.period / in.dt)), in.period, in.dt);
     fclose(output);
 }
+
+
+
+
+
