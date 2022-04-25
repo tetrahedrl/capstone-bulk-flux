@@ -47,7 +47,7 @@ int main()
     test.u = 0;
     for(int w = 0; w < 7; w++)
     {
-        test.u += 2;
+        test.u += 1;
         test.dqCoef = initialDQ;
         for(int i = 0; i < 100; i++)
         {

@@ -7,10 +7,10 @@
 double fluxLFinal;
 double humidityFinal;
 
-double alpha, gamma, aCorr, grav, karman, measureZ, windU, airT, surfaceT, specificQ, density, wg, coefEN, coefHN, roughZ, starQ, starT, starU, longwave;
+double alpha, profileGamma, aCorr, grav, karman, measureZ, windU, airT, surfaceT, specificQ, density, wg, coefEN, coefHN, roughZ, starQ, starT, starU, longwave;
 double lastHL, lastHS, lastStarU;
 
-double sstCorrection()
+/*double sstCorrection()
 {
     double salinitySB = 0.026;
     double expansionAlpha = 0.0003;
@@ -30,7 +30,7 @@ double sstCorrection()
 
     double coolCorrection = cooling * subThickness / conductivityK;
 
-}
+}*/
 
 // return enthalpy of vaporization for temp t
 double enthalpyV(double t)
@@ -103,10 +103,10 @@ double sqrtComponents(double sqrtNeutral, double psi, double correction, double 
 }
 
 // get psi function for wind U (0) or temp / humidity H (1)
-double getPsi(double z, double gamma, int type) 
+double getPsi(double z, double profileGamma, int type) 
 {
     if (!(type == 0 || type == 1)) return -1;
-    double y = cbrt(1. - gamma * z);
+    double y = cbrt(1. - profileGamma * z);
     double psiC = 1.5 * log((y * y + y + 1) / 3) - sqrt(3) * atan((2 * y + 1) / sqrt(3)) + M_PI / sqrt(3);
     double psiKU = 2 * log((1 + sqrt(y)) / 2) + log((y + 1)/2);
     double psiKH = 2 * log((1 + y) / 2);
@@ -135,7 +135,7 @@ void runCoare(CoareData inputs, double *humidityFinal, double *fluxLFinal)
     FILE *conv = fopen(inputs.convFilename, "a");
 
     alpha = inputs.alpha;
-    gamma = inputs.gamma;
+    profileGamma = inputs.gamma;
     aCorr = inputs.a;
     grav = inputs.g;
     karman = inputs.karman;
@@ -187,8 +187,8 @@ void runCoare(CoareData inputs, double *humidityFinal, double *fluxLFinal)
         rT = reynoldsConvert(rR, 0);
         rQ = reynoldsConvert(rR, 1);
 
-        psiU = getPsi(zeta, gamma, 0);
-        psiH = getPsi(zeta, gamma, 1);
+        psiU = getPsi(zeta, profileGamma, 0);
+        psiH = getPsi(zeta, profileGamma, 1);
 
         sqrtCoefDN = sqrtNeutrals(rR, 1., viscAir, starU, karman, measureZ);
         sqrtCoefTN = sqrtNeutrals(rT, aCorr, viscAir, starU, karman, measureZ);
